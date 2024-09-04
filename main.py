@@ -163,13 +163,11 @@ class ToBinaryImage(ImageProcessor):
     def adaptive_threshold(self):
         gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         
-        blk_size = 9        # 블럭 사이즈
-        C = 5               # 차감 상수 
+        blk_size = 9 
+        C = 5
         
-        # ---① 오츠의 알고리즘으로 단일 경계 값을 전체 이미지에 적용
         ret, th1 = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
-        # ---② 어뎁티드 쓰레시홀드를 평균과 가우시안 분포로 각각 적용
         th2 = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,\
                                             cv2.THRESH_BINARY, blk_size, C)
         th3 = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
@@ -184,16 +182,12 @@ class HistoProcessing(ImageProcessor):
         super().__init__(img_path, save_base_path)
     
     def histo_normalize(self):
-        #--① 그레이 스케일로 영상 읽기
         gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
-        # img = cv2.imread('../img/abnormal.jpg', cv2.IMREAD_GRAYSCALE)
 
-        #--② 직접 연산한 정규화
         img_f = gray.astype(np.float32)
         img_norm = ((img_f - img_f.min()) * (255) / (img_f.max() - img_f.min()))
         img_norm = img_norm.astype(np.uint8)
 
-        #--③ OpenCV API를 이용한 정규화
         img_norm2 = cv2.normalize(gray, None, 0, 255, cv2.NORM_MINMAX)
         
         self.save_image("histogram_normalize", "_normalize", img_norm)
@@ -202,7 +196,6 @@ class HistoProcessing(ImageProcessor):
     def histo_equalization(self):
         gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
         
-        # 직접 연산한 히스토그램 평활화
         hist = cv2.calcHist([gray], [0], None, [256], [0, 256])
         cdf = hist.cumsum()
         cdf_m = np.ma.masked_equal(cdf, 0)
@@ -210,19 +203,15 @@ class HistoProcessing(ImageProcessor):
         cdf = np.ma.filled(cdf_m, 0).astype('uint8')
         gray2 = cdf[gray]
 
-        # OpenCV API를 이용한 히스토그램 평활화
         equalized = cv2.equalizeHist(gray)
         
         self.save_image("histogram_equalization", "_equalized", equalized)
         self.save_image("histogram_equalization", "_equalized2", gray2)
     
     def histo_equalize_color(self):
-        img = cv2.imread(self.img_path) # 컬러 이미지로  읽기
-        # 컬러 스페이스를 YUV로 변경
+        img = cv2.imread(self.img_path)
         yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
-        # Y 채널에 대해서만 히스토그램 평활화 적용
         yuv[:,:,0] = cv2.equalizeHist(yuv[:,:,0])
-        # 컬러 스페이스를 BGR로 변경
         img2 = cv2.cvtColor(yuv, cv2.COLOR_YUV2BGR)
         
         self.save_image("histogram_equalize_color", "_equalized", img2)
@@ -230,15 +219,13 @@ class HistoProcessing(ImageProcessor):
     def histo_clahe(self):
         ing_yuv = cv2.cvtColor(self.img, cv2.COLOR_BGR2YUV)
         
-        #--② 밝기 채널에 대해서 이퀄라이즈 적용
         img_eq = ing_yuv.copy()
         img_eq[:,:,0] = cv2.equalizeHist(img_eq[:,:,0])
         img_eq = cv2.cvtColor(img_eq, cv2.COLOR_YUV2BGR)
         
-        #--③ 밝기 채널에 대해서 CLAHE 적용
         img_clahe = ing_yuv.copy()
-        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8)) #CLAHE 생성
-        img_clahe[:,:,0] = clahe.apply(img_clahe[:,:,0])           #CLAHE 적용
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+        img_clahe[:,:,0] = clahe.apply(img_clahe[:,:,0])
         img_clahe = cv2.cvtColor(ing_yuv, cv2.COLOR_YUV2BGR)
         
         self.save_image("clahe", "_clahe", img_clahe)
@@ -281,7 +268,6 @@ if __name__ == "__main__":
             img_name = os.path.splitext(os.path.basename(img_path))[0]
             # print(f"Processing {img_name}")
 
-            # Create instance of ImageProcessor and call methods
             morph = MorphologicalOperations(img_path, save_path)
             morph.morph_erode()
             morph.morph_dilate()
